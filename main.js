@@ -4,37 +4,48 @@ const density = document.getElementById('density');
 const play = document.getElementById('play');
 const reset = document.getElementById('reset');
 
-const gridSize = 50;
-// On ne change pas la taille du canvas
-const canvasSize = 1000;
+const canvasSize = 100;
+let gridSize = canvasSize;
 
-let cellsSize = canvasSize / gridSize;
+const canvasPixel = 1000
+
+let cellsSize = canvasPixel / gridSize;
 
 let drawGrid = [];
 let updateGrid = [];
 let mainLoop = null;
+let mouseZoom = [0,0];
+let coordinateM = [0,0];
 
 isMouseDown = false;
 
 function drawPixel(pixelsArray){
-    // On refraichit le canvas 
+    let zoomOrigin;
+    if(coordinateM[0] >= gridSize / 2){
+        zoomOrigin = gridSize / 2;
+    }else {
+        zoomOrigin = 0;
+    }
+    mouseZoom = [zoomOrigin - coordinateM[0], zoomOrigin - coordinateM[1]];
+    cellsSize = canvasPixel / gridSize;
+    // On rafraichit le canvas 
     ctx.clearRect(0,0, canvasSize, canvasSize)
     // la boucle i correspond au nombre de ligne cela correspond à la verticalité
     for(i = 0; i < gridSize; i++){
         // La boucle j correspond au nombre de colonne, cela correspond à l'horizontalité
         for(j = 0; j < gridSize; j++){
-            color = pixelsArray[i][j] ? "black" : "white";
+            color = pixelsArray[i][j] ? "red" : "black";
             ctx.fillStyle = color;
-            ctx.fillRect(i * cellsSize, j * cellsSize, cellsSize, cellsSize)
+            ctx.fillRect(mouseZoom[0] + i * cellsSize, mouseZoom[1] +  j * cellsSize, cellsSize, cellsSize)
         }
     }
 }
 
-function initGrid(gridSize, density = 0.5){
-    for (i = 0; i < gridSize; i++) {
+function initGrid(density = 0.5){
+    for (i = 0; i < canvasSize; i++) {
         drawGrid[i] = [];
         updateGrid[i] = [];
-        for(j = 0; j < gridSize; j++) {
+        for(j = 0; j < canvasSize; j++) {
             drawGrid[i][j] = getRandomBoolean(density);
             updateGrid[i][j] = null;
         }
@@ -49,7 +60,7 @@ function getRandomBoolean(density){
 
 // Ici on crée un reset pour afficher que des pixels blanc. Par contre on peut toujours dessiner et reclear par la suite.
 reset.addEventListener('click', function(){
-    initGrid(gridSize, 0)
+    initGrid(0)
     drawPixel(drawGrid);
 })
 
@@ -57,7 +68,7 @@ density.value = 0.5;
 
 density.addEventListener('input', function(){
     let val = this.value;
-    initGrid(gridSize, val);
+    initGrid(val);
     drawPixel(drawGrid);
 })
 
@@ -67,8 +78,8 @@ density.addEventListener('input', function(){
 // Règle N°4 : Une cellule morte avec exactement trois voisines vivantes devient une cellule vivante
 function main(){
     mainLoop = setInterval(function(){
-        for(i = 0; i < gridSize; i++){
-            for(j = 0; j < gridSize; j++){
+        for(i = 0; i < canvasSize; i++){
+            for(j = 0; j < canvasSize; j++){
                 // On vérifie l'état de la cellule (vivant ou morte)
                 let cellState = drawGrid[i][j];
                 // Calculer le nombre de cellule vivante autour d'elle
@@ -84,7 +95,7 @@ function main(){
         exchangeGrid();
         // On dessine
         drawPixel(drawGrid)
-    }, 20)
+    }, 200)
 }
 
 function deadOrAliveNbr(x, y){
@@ -130,8 +141,8 @@ function checkIsAlive(cellState, neighboursNbrCellAlive){
 }
 
 function exchangeGrid() {
-    for(i = 0; i < gridSize; i++){
-        for(j = 0; j < gridSize; j++) {
+    for(i = 0; i < canvasSize; i++){
+        for(j = 0; j < canvasSize; j++) {
             drawGrid[i][j] = updateGrid[i][j];
         }
     }
@@ -145,8 +156,8 @@ canvas.addEventListener('click', function (e){
 })
 
 canvas.addEventListener('mousemove', function (e){
+    let coordinate = getMouseCoordinates(e)
     if (isMouseDown){
-        let coordinate = getMouseCoordinates(e)
         drawGrid[coordinate[0]][coordinate[1]] = true;
         drawPixel(drawGrid);
     } 
@@ -173,7 +184,6 @@ play.addEventListener('click', function(){
         main();
     }
 })
-// Fin des fonctions pour modifier ---------------------------------
 
 function getMouseCoordinates(event) {
     let limit = canvas.getBoundingClientRect();
@@ -184,6 +194,42 @@ function getMouseCoordinates(event) {
     let pY = Math.floor(posY / cellsSize);
     return [pX, pY];
 }
+// -------------------------------- Fin des fonctions pour modifier ---------------------------------
 
-initGrid(gridSize);
+// Experimentation de mise en place d'un zoom 
+
+let scale = 1; 
+
+canvas.addEventListener('wheel', function (e){
+    e.preventDefault()
+    coordinateM = getMouseCoordinates(e);
+    scale += e.deltaY * 0.001;
+
+
+    if (gridSize < canvasSize ) {
+        scale = Math.min(Math.max(scale, 0.1), 1.1);
+    }else {
+        scale = Math.min(Math.max(scale, 0.1), 1);
+    }
+
+    gridSize = Math.round(clamp(gridSize * scale, canvasSize * 0.1, canvasSize));
+
+    scale = 1;
+
+    drawPixel(drawGrid);
+    // console.log(gridSize, scale)
+})
+
+function clamp(value, min, max){
+    if(value > max){
+        return max
+    }else if(value < min){
+        return min;
+    }else {
+        return value;
+    }
+    
+}
+
+initGrid();
 drawPixel(drawGrid);
