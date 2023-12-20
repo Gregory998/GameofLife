@@ -1,9 +1,10 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const density = document.getElementById('density');
-const play = document.getElementById('play')
-const gridSize = 50;
+const play = document.getElementById('play');
+const reset = document.getElementById('reset');
 
+const gridSize = 50;
 // On ne change pas la taille du canvas
 const canvasSize = 1000;
 
@@ -12,6 +13,8 @@ let cellsSize = canvasSize / gridSize;
 let drawGrid = [];
 let updateGrid = [];
 let mainLoop = null;
+
+isMouseDown = false;
 
 function drawPixel(pixelsArray){
     // On refraichit le canvas 
@@ -43,6 +46,12 @@ function initGrid(gridSize, density = 0.5){
 function getRandomBoolean(density){
     return Math.random() < density;
 }
+
+// Ici on crée un reset pour afficher que des pixels blanc. Par contre on peut toujours dessiner et reclear par la suite.
+reset.addEventListener('click', function(){
+    initGrid(gridSize, 0)
+    drawPixel(drawGrid);
+})
 
 density.value = 0.5;
 
@@ -128,15 +137,32 @@ function exchangeGrid() {
     }
 }
 
+// Ici on fait toutes les fonctions pour qu'on puisse modifier avec des events notre game of life
 canvas.addEventListener('click', function (e){
-    let limit = canvas.getBoundingClientRect();
-    let posX = e.clientX - limit.left;
-    let posY = e.clientY - limit.top;
-    //Math.floor veut dire qu'on arrondi au plus bas.
-    let pX = Math.floor(posX / cellsSize);
-    let pY = Math.floor(posY / cellsSize);
-    drawGrid[pX][pY] = drawGrid[pX][pY] ? false : true;
+    let coordinate = getMouseCoordinates(e)
+    drawGrid[coordinate[0]][coordinate[1]] = drawGrid[coordinate[0]][coordinate[1]] ? false : true;
     drawPixel(drawGrid);
+})
+
+canvas.addEventListener('mousemove', function (e){
+    if (isMouseDown){
+        let coordinate = getMouseCoordinates(e)
+        drawGrid[coordinate[0]][coordinate[1]] = true;
+        drawPixel(drawGrid);
+    } 
+})
+
+// Quand on clique
+canvas.addEventListener('mousedown', function(){
+    isMouseDown = true
+})
+// Quand on relâche le click
+canvas.addEventListener('mouseup', function(){
+    isMouseDown = false
+})
+// Quand on quitte le champ d'action
+canvas.addEventListener('mouseout', function(){
+    isMouseDown = false
 })
 
 play.addEventListener('click', function(){
@@ -147,6 +173,17 @@ play.addEventListener('click', function(){
         main();
     }
 })
+// Fin des fonctions pour modifier ---------------------------------
+
+function getMouseCoordinates(event) {
+    let limit = canvas.getBoundingClientRect();
+    let posX = event.clientX - limit.left;
+    let posY = event.clientY - limit.top;
+    //Math.floor veut dire qu'on arrondi au plus bas.
+    let pX = Math.floor(posX / cellsSize);
+    let pY = Math.floor(posY / cellsSize);
+    return [pX, pY];
+}
 
 initGrid(gridSize);
 drawPixel(drawGrid);

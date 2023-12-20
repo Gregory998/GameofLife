@@ -17,13 +17,23 @@ canvas {
 }
 
 #play {
-    width: 15%;
+    width: 10%;
     height: 4vh;
     color: white;
     font-weight: bolder;
     border: 3px solid black;
     font-size: 2em;
     background-color: red;
-    border-radius: 40%;
+    margin: 5px;
+}
+
+#reset {
+    width: 8%;
+    height: 4vh;
+    color: black;
+    font-weight: bolder;
+    border: 3px solid black;
+    font-size: 2em;
+    background-color: gray;
     margin: 5px;
 }
